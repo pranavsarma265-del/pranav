@@ -1,0 +1,121 @@
+from flask import Flask, request, jsonify, render_template_string
+
+app = Flask(__name__)
+
+college_data = {
+    "name": "ABC Engineering College",
+    "location": "Hyderabad, Telangana",
+    "courses": ["B.Tech", "BBA", "BCA", "MBA"],
+    "fees": "₹75,000 per year",
+    "contact": "9876543210",
+    "email": "info@abccollege.edu",
+    "admission": "Admissions are open from March to July."
+}
+
+def get_response(msg):
+    msg = msg.lower()
+
+    if "name" in msg:
+        return college_data["name"]
+    elif "location" in msg:
+        return college_data["location"]
+    elif "course" in msg:
+        return ", ".join(college_data["courses"])
+    elif "fee" in msg:
+        return college_data["fees"]
+    elif "contact" in msg:
+        return college_data["contact"]
+    elif "email" in msg:
+        return college_data["email"]
+    elif "admission" in msg:
+        return college_data["admission"]
+    else:
+        return "Sorry, ask about name, location, courses, fees, contact, email or admission."
+
+@app.route("/")
+def home():
+    return render_template_string("""
+<!DOCTYPE html>
+<html>
+<head>
+<title>College Chatbot</title>
+<style>
+body{
+    font-family: Arial;
+    background: linear-gradient(to right,#4e73df,#1cc88a);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.chat-container{
+    width:400px;
+    background:white;
+    border-radius:15px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.3);
+    padding:20px;
+}
+.chat-box{
+    height:300px;
+    overflow-y:auto;
+    border:1px solid #ddd;
+    padding:10px;
+    margin-bottom:10px;
+}
+.user{color:#4e73df;}
+.bot{color:#1cc88a;}
+input{
+    width:75%;
+    padding:10px;
+}
+button{
+    width:20%;
+    padding:10px;
+    background:#4e73df;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+button:hover{background:#2e59d9;}
+</style>
+</head>
+<body>
+<div class="chat-container">
+<h2>🎓 College Assistant</h2>
+<div class="chat-box" id="chatBox"></div>
+<input type="text" id="userInput" placeholder="Ask about college..." />
+<button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+async function sendMessage(){
+    let input = document.getElementById("userInput");
+    let message = input.value;
+    let chatBox = document.getElementById("chatBox");
+
+    chatBox.innerHTML += "<div class='user'><b>You:</b> "+message+"</div>";
+
+    const response = await fetch("/chat",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message:message})
+    });
+
+    const data = await response.json();
+    chatBox.innerHTML += "<div class='bot'><b>Bot:</b> "+data.response+"</div>";
+
+    input.value="";
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+</script>
+</body>
+</html>
+""")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    user_msg = request.json["message"]
+    return jsonify({"response": get_response(user_msg)})
+
+if __name__ == "__main__":
+    app.run(debug=True)
